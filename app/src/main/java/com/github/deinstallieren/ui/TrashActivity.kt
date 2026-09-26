@@ -2,6 +2,8 @@ package com.github.deinstallieren.ui
 
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -30,6 +32,7 @@ class TrashActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         setupRecyclerView()
+        setupSearch()
         loadRecycledApps()
     }
 
@@ -41,13 +44,23 @@ class TrashActivity : AppCompatActivity() {
         binding.rvTrash.adapter = adapter
     }
 
+    private fun setupSearch() {
+        binding.etSearchTrash.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                adapter.filter(s?.toString() ?: "", 0)
+            }
+            override fun afterTextChanged(s: Editable?) {}
+        })
+    }
+
     private fun loadRecycledApps() {
         lifecycleScope.launch {
             val list = mutableListOf<AppItem>()
             val pm = packageManager
 
             withContext(Dispatchers.IO) {
-                // 1. Cargar apps inhabilitadas
+                // 1. Obtener apps inhabilitadas reales
                 val (_, disabledOutput) = ShizukuCommander.exec("pm list packages -d")
                 val disabledPackages = disabledOutput.lines()
                     .filter { it.startsWith("package:") }
@@ -55,37 +68,86 @@ class TrashActivity : AppCompatActivity() {
 
                 for (pkg in disabledPackages) {
                     try {
-                        val appInfo = pm.getApplicationInfo(pkg, PackageManager.MATCH_UNINSTALLED_PACKAGES)
-                        val name = pm.getApplicationLabel(appInfo).toString().ifBlank { pkg }
-                        val icon = try { pm.getApplicationIcon(appInfo) } catch (e: Throwable) { null }
-                        list.add(AppItem(pkg, name, icon, isSystem = true, isUpdatedSystem = false, isChipset = false, isEnabled = false, isUninstalled = false))
+                        val appInfo = pm.getApplicationInfo(pkg, 0)
+                        if (!appInfo.enabled) {
+                            val name = pm.getApplicationLabel(appInfo).toString().ifBlank { pkg }
+                            val icon = try { pm.getApplicationIcon(appInfo) } catch (e: Throwable) { null }
+                            list.add(
+                                AppItem(
+                                    packageName = pkg,
+                                    appName = name,
+                                    icon = icon,
+                                    isSystem = true,
+                                    isUpdatedSystem = false,
+                                    isChipset = false,
+                                    isEnabled = false,
+                                    isUninstalled = false
+                                )
+                            )
+                        }
                     } catch (e: Throwable) {}
                 }
 
-                // 2. Cargar apps desinstaladas de sistema (-u)
+                // 2. Obtener apps de sistema realmente desinstaladas (--user 0)
                 val (_, uninstalledOutput) = ShizukuCommander.exec("pm list packages -u -s")
-                val uninstalledPackages = uninstalledOutput.lines()
+                val candidateSystem = uninstalledOutput.lines()
                     .filter { it.startsWith("package:") }
                     .map { it.removePrefix("package:").trim() }
 
-                for (pkg in uninstalledPackages) {
+                for (pkg in candidateSystem) {
                     if (list.any { it.packageName == pkg }) continue
                     try {
-                        val appInfo = pm.getApplicationInfo(pkg, PackageManager.MATCH_UNINSTALLED_PACKAGES)
-                        val name = pm.getApplicationLabel(appInfo).toString().ifBlank { pkg }
-                        val icon = try { pm.getApplicationIcon(appInfo) } catch (e: Throwable) { null }
-                        list.add(AppItem(pkg, name, icon, isSystem = true, isUpdatedSystem = false, isChipset = false, isEnabled = false, isUninstalled = true))
+                        try {
+                            pm.getApplicationInfo(pkg, 0)
+                            // Si no lanza excepción, sigue instalada activa -> ignorar
+                        } catch (e: PackageManager.NameNotFoundException) {
+                            // Está realmente desinstalada
+                            val uninstalledInfo = pm.getApplicationInfo(pkg, PackageManager.MATCH_UNINSTALLED_PACKAGES)
+                            val name = pm.getApplicationLabel(uninstalledInfo).toString().ifBlank { pkg }
+                            val icon = try { pm.getApplicationIcon(uninstalledInfo) } catch (err: Throwable) { null }
+                            list.add(
+                                AppItem(
+                                    packageName = pkg,
+                                    appName = name,
+                                    icon = icon,
+                                    isSystem = true,
+                                    isUpdatedSystem = false,
+                                    isChipset = false,
+                                    isEnabled = false,
+                                    isUninstalled = true
+                                )
+                            )
+                        }
                     } catch (e: Throwable) {}
                 }
 
-                // 3. Cargar apps respaldadas localmente
+                // 3. Obtener apps de usuario desinstaladas con respaldo interno
                 val backupRoot = File(filesDir, "backups")
                 if (backupRoot.exists()) {
                     backupRoot.listFiles()?.forEach { dir ->
                         if (dir.isDirectory) {
                             val pkg = dir.name
                             if (list.none { it.packageName == pkg }) {
-                                list.add(AppItem(pkg, pkg, null, isSystem = false, isUpdatedSystem = false, isChipset = false, isEnabled = false, isUninstalled = true))
+                                val isCurrentlyInstalled = try {
+                                    pm.getApplicationInfo(pkg, 0)
+                                    true
+                                } catch (e: PackageManager.NameNotFoundException) {
+                                    false
+                                }
+                                if (!isCurrentlyInstalled) {
+                                    list.add(
+                                        AppItem(
+                                            packageName = pkg,
+                                            appName = pkg,
+                                            icon = null,
+                                            isSystem = false,
+                                            isUpdatedSystem = false,
+                                            isChipset = false,
+                                            isEnabled = false,
+                                            isUninstalled = true
+                                        )
+                                    )
+                                }
                             }
                         }
                     }
@@ -101,10 +163,8 @@ class TrashActivity : AppCompatActivity() {
         val hasLocalBackup = File(filesDir, "backups/${item.packageName}").exists()
 
         if (!item.isUninstalled) {
-            // Solo está inhabilitada
             popup.menu.add(getString(R.string.action_enable))
         } else {
-            // Está desinstalada
             popup.menu.add(getString(R.string.action_reinstall))
         }
 
