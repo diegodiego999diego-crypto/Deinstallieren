@@ -21,7 +21,15 @@ object ShizukuCommander {
 
     suspend fun exec(command: String): Pair<Int, String> = withContext(Dispatchers.IO) {
         try {
-            val process = Shizuku.newProcess(arrayOf("sh", "-c", command), null, null)
+            // Acceso por reflexión al proceso remoto de Shizuku
+            val newProcessMethod = Shizuku::class.java.getDeclaredMethod(
+                "newProcess",
+                Array<String>::class.java,
+                Array<String>::class.java,
+                String::class.java
+            ).apply { isAccessible = true }
+
+            val process = newProcessMethod.invoke(null, arrayOf("sh", "-c", command), null, null) as Process
             val output = StringBuilder()
             val reader = BufferedReader(InputStreamReader(process.inputStream))
             var line: String?
