@@ -21,11 +21,9 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: Validar o generar Gradle Wrapper
+    - name: Validar o generar Gradle Wrapper 8.5
       run: |
-        if [ ! -f "gradlew" ]; then
-          gradle wrapper
-        fi
+        gradle wrapper --gradle-version 8.5
         chmod +x gradlew
 
     - name: Compilar APK Debug
