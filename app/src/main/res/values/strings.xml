@@ -15,6 +15,7 @@
     <string name="action_enable">Habilitar</string>
     <string name="badge_chipset">Chipset</string>
     <string name="badge_disabled">Inhabilitada</string>
+    <string name="badge_uninstalled">Desinstalada</string>
     <string name="badge_suspended">Suspendida</string>
     <string name="warning_user_app">Esta app no se podrá reinstalar normalmente</string>
     <string name="btn_cancel">Cancelar</string>
