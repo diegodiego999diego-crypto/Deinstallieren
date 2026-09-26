@@ -3,9 +3,10 @@ package com.github.deinstallieren.ui
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.view.View
-import android.widget.PopupMenu
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.view.ContextThemeWrapper
+import androidx.appcompat.widget.PopupMenu
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.github.deinstallieren.R
@@ -57,7 +58,7 @@ class TrashActivity : AppCompatActivity() {
                         val appInfo = pm.getApplicationInfo(pkg, PackageManager.MATCH_UNINSTALLED_PACKAGES)
                         val name = pm.getApplicationLabel(appInfo).toString().ifBlank { pkg }
                         val icon = try { pm.getApplicationIcon(appInfo) } catch (e: Throwable) { null }
-                        list.add(AppItem(pkg, name, icon, isSystem = true, isUpdatedSystem = false, isChipset = false, isEnabled = false))
+                        list.add(AppItem(pkg, name, icon, isSystem = true, isUpdatedSystem = false, isChipset = false, isEnabled = false, isUninstalled = false))
                     } catch (e: Throwable) {}
                 }
 
@@ -73,18 +74,18 @@ class TrashActivity : AppCompatActivity() {
                         val appInfo = pm.getApplicationInfo(pkg, PackageManager.MATCH_UNINSTALLED_PACKAGES)
                         val name = pm.getApplicationLabel(appInfo).toString().ifBlank { pkg }
                         val icon = try { pm.getApplicationIcon(appInfo) } catch (e: Throwable) { null }
-                        list.add(AppItem(pkg, name, icon, isSystem = true, isUpdatedSystem = false, isChipset = false, isEnabled = false))
+                        list.add(AppItem(pkg, name, icon, isSystem = true, isUpdatedSystem = false, isChipset = false, isEnabled = false, isUninstalled = true))
                     } catch (e: Throwable) {}
                 }
 
-                // 3. Cargar apps de usuario respaldadas localmente
+                // 3. Cargar apps respaldadas localmente
                 val backupRoot = File(filesDir, "backups")
                 if (backupRoot.exists()) {
                     backupRoot.listFiles()?.forEach { dir ->
                         if (dir.isDirectory) {
                             val pkg = dir.name
                             if (list.none { it.packageName == pkg }) {
-                                list.add(AppItem(pkg, pkg, null, isSystem = false, isUpdatedSystem = false, isChipset = false, isEnabled = false))
+                                list.add(AppItem(pkg, pkg, null, isSystem = false, isUpdatedSystem = false, isChipset = false, isEnabled = false, isUninstalled = true))
                             }
                         }
                     }
@@ -95,13 +96,17 @@ class TrashActivity : AppCompatActivity() {
     }
 
     private fun showTrashMenu(item: AppItem, anchor: View) {
-        val popup = PopupMenu(this, anchor)
+        val wrapper = ContextThemeWrapper(this, R.style.Theme_Deinstallieren)
+        val popup = PopupMenu(wrapper, anchor)
         val hasLocalBackup = File(filesDir, "backups/${item.packageName}").exists()
 
-        if (!item.isEnabled && !hasLocalBackup) {
+        if (!item.isUninstalled) {
+            // Solo está inhabilitada
             popup.menu.add(getString(R.string.action_enable))
+        } else {
+            // Está desinstalada
+            popup.menu.add(getString(R.string.action_reinstall))
         }
-        popup.menu.add(getString(R.string.action_reinstall))
 
         popup.setOnMenuItemClickListener { menuItem ->
             when (menuItem.title) {
