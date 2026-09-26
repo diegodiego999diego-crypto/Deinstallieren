@@ -75,6 +75,10 @@ class AppAdapter(
                     binding.tvBadge.visibility = View.VISIBLE
                     binding.tvBadge.text = itemView.context.getString(R.string.badge_chipset)
                 }
+                item.isUninstalled -> {
+                    binding.tvBadge.visibility = View.VISIBLE
+                    binding.tvBadge.text = itemView.context.getString(R.string.badge_uninstalled)
+                }
                 !item.isEnabled -> {
                     binding.tvBadge.visibility = View.VISIBLE
                     binding.tvBadge.text = itemView.context.getString(R.string.badge_disabled)
@@ -88,7 +92,7 @@ class AppAdapter(
                 }
             }
 
-            binding.root.alpha = if (!item.isEnabled || item.isSuspended) 0.5f else 1.0f
+            binding.root.alpha = if (!item.isEnabled || item.isSuspended || item.isUninstalled) 0.6f else 1.0f
 
             binding.root.setOnClickListener {
                 onItemClick(item, binding.root)
