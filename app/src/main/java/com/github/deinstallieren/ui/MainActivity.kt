@@ -19,7 +19,7 @@ import com.github.deinstallieren.databinding.ActivityMainBinding
 import com.github.deinstallieren.model.AppItem
 import com.github.deinstallieren.utils.ApkManager
 import com.github.deinstallieren.utils.ShizukuCommander
-import dev.rikka.shizuku.Shizuku
+import rikka.shizuku.Shizuku
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -58,7 +58,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun checkShizuku() {
         try {
-            if (Shizuku.isPre_V11() || !Shizuku.pingBinder()) {
+            if (Shizuku.isPreV11() || !Shizuku.pingBinder()) {
                 binding.bannerShizuku.visibility = View.VISIBLE
                 return
             }
@@ -141,11 +141,9 @@ class MainActivity : AppCompatActivity() {
         val popup = PopupMenu(this, anchor)
 
         if (item.isChipset) {
-            // Protección total: menú seguro de 2 opciones
             popup.menu.add(getString(R.string.action_extract))
             popup.menu.add(getString(R.string.action_manifest))
         } else {
-            // Menú completo de 5 opciones
             popup.menu.add(getString(R.string.action_uninstall))
             popup.menu.add(getString(R.string.action_disable))
             popup.menu.add(getString(R.string.action_suspend))
@@ -168,7 +166,6 @@ class MainActivity : AppCompatActivity() {
 
     private fun handleUninstall(item: AppItem): Boolean {
         if (!item.isSystem || item.isUpdatedSystem) {
-            // Apps de usuario o actualizaciones de sistema: Aviso de seguridad
             AlertDialog.Builder(this)
                 .setMessage(getString(R.string.warning_user_app))
                 .setNegativeButton(getString(R.string.btn_cancel), null)
@@ -180,7 +177,6 @@ class MainActivity : AppCompatActivity() {
                 }
                 .show()
         } else {
-            // App de fábrica: Desinstalación directa sin diálogo
             lifecycleScope.launch {
                 val ok = ShizukuCommander.uninstallSystem(item.packageName)
                 if (ok) {
