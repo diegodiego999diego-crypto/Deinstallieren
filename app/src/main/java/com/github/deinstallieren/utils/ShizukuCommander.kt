@@ -2,7 +2,7 @@ package com.github.deinstallieren.utils
 
 import android.content.Context
 import android.content.pm.PackageManager
-import dev.rikka.shizuku.Shizuku
+import rikka.shizuku.Shizuku
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.BufferedReader
@@ -76,19 +76,16 @@ object ShizukuCommander {
         exec("mkdir -p $tempDir")
 
         try {
-            // Copiar APKs hacia /data/local/tmp
             for (apk in apks) {
                 exec("cp \"${apk.absolutePath}\" \"$tempDir/${apk.name}\"")
             }
 
-            // Crear sesión de instalación haciéndose pasar por Google Play Store
             val (createCode, createOut) = exec("pm install-create -r -d -i com.android.vending")
             if (createCode != 0) return@withContext false
 
             val sessionId = "\\[created install session (\\d+)\\]".toRegex()
                 .find(createOut)?.groupValues?.get(1) ?: return@withContext false
 
-            // Escribir cada APK (base y splits) en la sesión
             for (apk in apks) {
                 val writeCmd = "pm install-write $sessionId \"${apk.name}\" \"$tempDir/${apk.name}\""
                 val (writeCode, _) = exec(writeCmd)
@@ -98,12 +95,10 @@ object ShizukuCommander {
                 }
             }
 
-            // Confirmar instalación, liberar permisos restringidos de Android 13+ y purgar /data/local/tmp
             val commitCmd = "pm install-commit $sessionId; cmd appops set $packageName ACCESS_RESTRICTED_SETTINGS allow"
             val (commitCode, _) = exec(commitCmd)
 
             if (commitCode == 0) {
-                // Borrar backup interno para recuperar espacio
                 backupDir.deleteRecursively()
                 return@withContext true
             }
