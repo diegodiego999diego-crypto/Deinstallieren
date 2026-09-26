@@ -99,9 +99,9 @@ class TrashActivity : AppCompatActivity() {
                     try {
                         try {
                             pm.getApplicationInfo(pkg, 0)
-                            // Si no lanza excepción, sigue instalada activa -> ignorar
+                            // Si responde, sigue instalada y activa -> ignorar
                         } catch (e: PackageManager.NameNotFoundException) {
-                            // Está realmente desinstalada
+                            // Está realmente desinstalada: extraemos metadatos del APK en partición
                             val uninstalledInfo = pm.getApplicationInfo(pkg, PackageManager.MATCH_UNINSTALLED_PACKAGES)
                             val name = pm.getApplicationLabel(uninstalledInfo).toString().ifBlank { pkg }
                             val icon = try { pm.getApplicationIcon(uninstalledInfo) } catch (err: Throwable) { null }
