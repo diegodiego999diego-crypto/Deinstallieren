@@ -10,7 +10,8 @@ data class AppItem(
     val isUpdatedSystem: Boolean,
     val isChipset: Boolean,
     var isEnabled: Boolean = true,
-    var isSuspended: Boolean = false
+    var isSuspended: Boolean = false,
+    var isUninstalled: Boolean = false
 ) {
     companion object {
         private val CHIPSET_PREFIXES = listOf(
