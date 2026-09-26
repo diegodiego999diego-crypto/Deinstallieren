@@ -1,0 +1,24 @@
+<resources>
+    <string name="app_name">Deinstallieren</string>
+    <string name="search_hint">Buscar app o paquete...</string>
+    <string name="filter_all">Todas</string>
+    <string name="filter_system">Sistema</string>
+    <string name="filter_user">Usuario</string>
+    <string name="trash_title">Papelera</string>
+    <string name="manifest_title">Manifiesto</string>
+    <string name="action_uninstall">Desinstalar</string>
+    <string name="action_disable">Inhabilitar</string>
+    <string name="action_suspend">Suspender</string>
+    <string name="action_extract">Extraer APK</string>
+    <string name="action_manifest">Visor de manifiesto</string>
+    <string name="action_reinstall">Reinstalar</string>
+    <string name="action_enable">Habilitar</string>
+    <string name="badge_chipset">Chipset</string>
+    <string name="badge_disabled">Inhabilitada</string>
+    <string name="badge_suspended">Suspendida</string>
+    <string name="warning_user_app">Esta app no se podrá reinstalar normalmente</string>
+    <string name="btn_cancel">Cancelar</string>
+    <string name="btn_accept">Aceptar</string>
+    <string name="btn_extract_and_uninstall">Extraer APK y Desinstalar</string>
+    <string name="shizuku_not_running">Shizuku no está en ejecución o no tiene permisos</string>
+</resources>
